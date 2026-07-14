@@ -198,6 +198,18 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
             }
         }
     }
+
+    pub fn doables(&self) -> Vec<&T> {
+        self.task_dag
+            .doables()
+            .iter()
+            .map(|task_id| {
+                self.task_dag
+                    .get(task_id)
+                    .expect("internal task_id should be valid")
+            })
+            .collect()
+    }
 }
 
 struct Task<T> {
