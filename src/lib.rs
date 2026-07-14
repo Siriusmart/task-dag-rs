@@ -159,8 +159,10 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
         id
     }
 
-    /// Requires dependent to be parked for deduplication to function
-    pub fn add_with_dependencies(&mut self, dependent: T, dependencies: Vec<T>) {
+    /// Requires dependent to be parked, for each dependency, wait for
+    /// - If a copy of the dependency is already parked, wait for that one
+    /// - If no copies of the dependency is parked, create a new one and wait for that
+    pub fn add_parked_dependencies(&mut self, dependent: T, dependencies: Vec<T>) {
         let dependent_id = *self
             .parked
             .get(&dependent)
@@ -169,6 +171,25 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
         for dependency in dependencies {
             let dependency_id = self.add_task(dependency);
             self.task_dag.set_dependency(dependent_id, dependency_id);
+        }
+    }
+
+    /// Requires dependent to be parked, for each dependency, wait for
+    /// - If a copy of the dependency is running, wait for that one
+    /// - If a copy of the dependency is already parked, wait for that one
+    /// - If no copies of the dependency is parked, create a new one and wait for that
+    pub fn add_any_dependencies(&mut self, dependent: T, dependencies: Vec<T>) {
+        let dependent_id = *self
+            .parked
+            .get(&dependent)
+            .expect("dependent is not parked");
+
+        for dependency in dependencies {
+            if let Some(running_id) = self.running.get(&dependency) {
+                self.task_dag.set_dependency(dependent_id, *running_id);
+            } else {
+                self.add_parked_dependencies(dependent.clone(), vec![dependency]);
+            }
         }
     }
 
