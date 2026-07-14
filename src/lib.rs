@@ -159,6 +159,10 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
         id
     }
 
+    pub fn add(&mut self, task: T) {
+        self.add_task(task);
+    }
+
     /// Requires dependent to be parked, for each dependency, wait for
     /// - If a copy of the dependency is already parked, wait for that one
     /// - If no copies of the dependency is parked, create a new one and wait for that
