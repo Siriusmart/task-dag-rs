@@ -199,6 +199,14 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
         }
     }
 
+    pub fn mark_done(&mut self, task: &T) {
+        let id = self
+            .running
+            .remove(&task)
+            .expect("marking done for a nonrunning task");
+        self.task_dag.mark_done(id);
+    }
+
     pub fn doables(&self) -> Vec<&T> {
         self.task_dag
             .doables()
