@@ -127,7 +127,7 @@ impl<T> TaskDag<T> {
 /// TaskDag with properties:
 /// - If multiple copies of the same task is queued (parked), squash them and do only once
 /// - Same task does not run overlapped
-struct DedupedTaskDag<T: Hash + Eq + Clone> {
+pub struct DedupedTaskDag<T: Hash + Eq + Clone> {
     task_dag: TaskDag<T>,
 
     // rules of deduping gurantee there are no duplicates
