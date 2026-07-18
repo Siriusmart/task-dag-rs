@@ -159,14 +159,20 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
         id
     }
 
-    pub fn add(&mut self, task: T) {
+    pub fn add_parked(&mut self, task: T) {
         self.add_task(task);
+    }
+
+    pub fn add_any(&mut self, task: T) {
+        if self.running.get(&task).is_none() {
+            self.add_parked(task);
+        }
     }
 
     /// Requires dependent to be parked, for each dependency, wait for
     /// - If a copy of the dependency is already parked, wait for that one
     /// - If no copies of the dependency is parked, create a new one and wait for that
-    pub fn add_parked_dependencies(&mut self, dependent: T, dependencies: Vec<T>) {
+    pub fn add_parked_dependencies(&mut self, dependent: &T, dependencies: Vec<T>) {
         let dependent_id = *self
             .parked
             .get(&dependent)
@@ -182,7 +188,7 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
     /// - If a copy of the dependency is running, wait for that one
     /// - If a copy of the dependency is already parked, wait for that one
     /// - If no copies of the dependency is parked, create a new one and wait for that
-    pub fn add_any_dependencies(&mut self, dependent: T, dependencies: Vec<T>) {
+    pub fn add_any_dependencies(&mut self, dependent: &T, dependencies: Vec<T>) {
         let dependent_id = *self
             .parked
             .get(&dependent)
@@ -192,7 +198,7 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
             if let Some(running_id) = self.running.get(&dependency) {
                 self.task_dag.set_dependency(dependent_id, *running_id);
             } else {
-                self.add_parked_dependencies(dependent.clone(), vec![dependency]);
+                self.add_parked_dependencies(dependent, vec![dependency]);
             }
         }
     }
@@ -241,6 +247,7 @@ impl<T: Hash + Eq + Clone> DedupedTaskDag<T> {
                     .get(task_id)
                     .expect("internal task_id should be valid")
             })
+            .filter(|task| self.parked.contains_key(task))
             .collect()
     }
 }
